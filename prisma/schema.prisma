@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  listings  Listing[]
+}
+
+model Listing {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  cityId      String
+  city        City           @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  district    String?
+  description String?
+  phone       String
+  whatsapp    String
+  venueType   String?
+  paymentType String?
+  tags        String         @default("")
+  featured    Boolean        @default(false)
+  active      Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  viewCount   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  images      ListingImage[]
+
+  @@index([cityId])
+  @@index([active, featured, sortOrder])
+}
+
+model ListingImage {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int      @default(0)
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+}
+
+model SiteSetting {
+  id                String   @id @default("default")
+  siteName          String   @default("İLAN VİTRİNİ")
+  logoUrl           String?
+  faviconUrl        String?
+  mainWhatsApp      String   @default("905390000000")
+  mainPhone         String   @default("905390000000")
+  instagramUrl      String?
+  telegramUrl       String?
+  footerText        String   @default("Tüm hakları saklıdır © 2026")
+  ctaTitle          String   @default("İLAN VERMEK İÇİN TIKLAYIN")
+  ctaSubtitle       String   @default("WhatsApp üzerinden hemen iletişime geçin, ilanınızı birkaç dakikada yayınlayın.")
+  ctaButtonText     String   @default("WHATSAPP'TAN ULAŞIN")
+  ctaActive         Boolean  @default(true)
+  seoTitle          String   @default("İlan Vitrini - Şehir İlanları & Rehberi")
+  seoDescription    String   @default("İzmir, İstanbul, Ankara ve tüm şehirlerde güncel ilanlar ve iletişim rehberi.")
+  googleAnalyticsId String?
+  maintenanceMode   Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+}
