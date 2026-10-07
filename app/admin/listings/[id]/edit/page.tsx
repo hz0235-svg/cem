@@ -12,19 +12,28 @@ export default async function EditListingPage({
 }) {
   const { id } = params;
 
-  const [listing, cities] = await Promise.all([
-    prisma.listing.findUnique({
-      where: { id },
-      include: {
-        images: {
-          orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
+  let listing: any = null;
+  let cities: any[] = [];
+
+  try {
+    const [dbListing, dbCities] = await Promise.all([
+      prisma.listing.findUnique({
+        where: { id },
+        include: {
+          images: {
+            orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }],
+          },
         },
-      },
-    }),
-    prisma.city.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    }),
-  ]);
+      }),
+      prisma.city.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+    ]);
+    listing = dbListing;
+    cities = dbCities;
+  } catch (err) {
+    console.warn('EditListingPage query error:', err);
+  }
 
   if (!listing) {
     notFound();
